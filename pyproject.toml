@@ -1,0 +1,11 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.black]
+line-length = 76
+extend-exclude = "^/(venv|backup|data)/"
+
+[tool.mypy]
+ignore_missing_imports = true
+exclude = ["^venv/", "^backup/"]

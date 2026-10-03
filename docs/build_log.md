@@ -2,3 +2,5 @@
 
    | Batch | What Claude Code built | What I changed or caught | What I learned |
    |---|---|---|---|
+
+   | v1.1 B1 — Platform foundations | Moved code into module folders with git mv (m1_emr, m2_his, m6_risk, m14_audit, m15_dashboard, platform); one Hospital class; shared ingest and bootstrap; JSON logs with counts only; live health check in the sidebar; scripts/check.py (black, flake8, mypy, bandit, pytest); UTF-8 requirements.txt and .gitignore; 78 tests (27 old + 51 new) | Health would have stopped the app on first start because the db is gitignored, which would break the live demo, so I asked for bootstrap first and health second. Duplicate IDs in the seed were skipped silently, so I had them shown in quarantine. Changed the spec's test count from 22 to 27. Decided the seed does not count as an upload. | Logs keep events and counts, never patient data, because many people see logs. sqlite3.connect() quietly creates a missing database, so health opens it with mode=rw to stay honest. A folder named platform hides Python's own platform module. |

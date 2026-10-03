@@ -1,8 +1,4 @@
-import pandas as pd
-
-from clinical_config import (
-    BMI_UNDERWEIGHT,
-    BMI_OVERWEIGHT,
+from aarogya.m6_risk.clinical_config import (
     BMI_OBESITY,
     BP_DIASTOLIC_HIGH,
     BP_SYSTOLIC_HIGH,
@@ -12,27 +8,23 @@ from clinical_config import (
 
 def calc_avg_bmi(df):
     return {
-        'mean': round(df['bmi'].mean(), 2),
-        'min': round(df['bmi'].min(), 2),
-        'max': round(df['bmi'].max(), 2)
+        "mean": round(df["bmi"].mean(), 2),
+        "min": round(df["bmi"].min(), 2),
+        "max": round(df["bmi"].max(), 2),
     }
 
 
 def calc_median_bp(df):
     return {
-        'systolic_median': round(
-            df['bp_systolic'].median(), 2
-        ),
-        'diastolic_median': round(
-            df['bp_diastolic'].median(), 2
-        )
+        "systolic_median": round(df["bp_systolic"].median(), 2),
+        "diastolic_median": round(df["bp_diastolic"].median(), 2),
     }
 
 
 def calc_std_sugar(df):
     return {
-        'mean': round(df['sugar_fasting'].mean(), 2),
-        'std': round(df['sugar_fasting'].std(), 2)
+        "mean": round(df["sugar_fasting"].mean(), 2),
+        "std": round(df["sugar_fasting"].std(), 2),
     }
 
 
