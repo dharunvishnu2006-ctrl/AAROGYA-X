@@ -17,16 +17,16 @@ def test_schema_init(db):
 def test_insert_and_duplicate_reject(db, make_patient):
     p = make_patient()
     cs.insert_patient(db, p)
-    assert cs.get_patient(db, "P1")["name"] == "Test"
+    assert cs.get_patient(db, "P001")["name"] == "Test"
     with pytest.raises(sqlite3.IntegrityError):
         cs.insert_patient(db, p)
 
 
 def test_correction_and_audit(db, make_patient):
     cs.insert_patient(db, make_patient())
-    cs.correct_patient_vital(db, "P1", "bmi", 26.5, "Weight increase")
-    assert cs.get_patient(db, "P1")["bmi"] == 26.5
-    history = cs.get_patient_history(db, "P1")
+    cs.correct_patient_vital(db, "P001", "bmi", 26.5, "Weight increase")
+    assert cs.get_patient(db, "P001")["bmi"] == 26.5
+    history = cs.get_patient_history(db, "P001")
     assert len(history) == 1
     assert (
         history[0]["old_value"] == "24.0"
@@ -37,11 +37,11 @@ def test_correction_and_audit(db, make_patient):
 def test_correction_guards(db, make_patient):
     cs.insert_patient(db, make_patient())
     with pytest.raises(ValueError, match="already"):
-        cs.correct_patient_vital(db, "P1", "bmi", 24.0, "No change")
+        cs.correct_patient_vital(db, "P001", "bmi", 24.0, "No change")
     with pytest.raises(ValueError, match="justification"):
-        cs.correct_patient_vital(db, "P1", "bmi", 25.0, "   ")
+        cs.correct_patient_vital(db, "P001", "bmi", 25.0, "   ")
     with pytest.raises(ValueError, match="editable"):
-        cs.correct_patient_vital(db, "P1", "name", "New", "Valid reason")
+        cs.correct_patient_vital(db, "P001", "name", "New", "Valid reason")
     with pytest.raises(KeyError):
         cs.correct_patient_vital(db, "P99", "bmi", 25.0, "Valid reason")
 
@@ -54,7 +54,7 @@ def test_disk_persistence(tmp_path, make_patient):
     c1.close()
 
     c2 = cs.get_connection(f)
-    assert cs.get_patient(c2, "P1") is not None
+    assert cs.get_patient(c2, "P001") is not None
     c2.close()
 
 
@@ -92,6 +92,17 @@ def test_ingest_log_has_no_patient_columns(db):
 
 def test_count_patients(db, make_patient):
     assert cs.count_patients(db) == 0
-    cs.insert_patient(db, make_patient("P1"))
-    cs.insert_patient(db, make_patient("P2"))
+    cs.insert_patient(db, make_patient("P001"))
+    cs.insert_patient(db, make_patient("P002"))
     assert cs.count_patients(db) == 2
+
+
+def test_stored_timestamps_are_utc(db, make_patient):
+    cs.insert_patient(db, make_patient())
+    assert cs.get_patient(db, "P001")["updated_at"].endswith("+00:00")
+    cs.correct_patient_vital(db, "P001", "bmi", 26.0, "Re-measured")
+    assert cs.get_patient(db, "P001")["updated_at"].endswith("+00:00")
+    history = cs.get_patient_history(db, "P001")
+    assert history[0]["recorded_at"].endswith("+00:00")
+    cs.record_ingest(db, 1, 1, 0)
+    assert cs.get_last_ingest_utc(db).endswith("+00:00")

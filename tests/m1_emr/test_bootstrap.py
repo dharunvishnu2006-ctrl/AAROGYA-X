@@ -94,3 +94,12 @@ def test_store_removed_after_bootstrap_is_unhealthy(tmp_path, sample_csv):
     assert report["status"] == "unhealthy"
     assert report["store_reachable"] is False
     assert not db_path.exists()
+
+
+def test_seed_with_bom_and_spaced_header(tmp_path, sample_df):
+    seed = tmp_path / "seed.csv"
+    spaced = sample_df.rename(columns=lambda c: f" {c} ")
+    spaced.to_csv(seed, index=False, encoding="utf-8-sig")
+    db_path = tmp_path / "aarogya.db"
+    assert bootstrap_store(db_path, seed) == {"quarantined": []}
+    assert health(db_path)["patient_count"] == 4

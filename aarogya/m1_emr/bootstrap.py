@@ -3,10 +3,8 @@
 from pathlib import Path
 from typing import Any, Dict, Union
 
-import pandas as pd
-
 from aarogya.m1_emr import clinical_store as cs
-from aarogya.m1_emr.ingest import ingest_dataframe
+from aarogya.m1_emr.ingest import ingest_dataframe, read_patient_csv
 from aarogya.m14_audit.logging_setup import log_event
 
 MODULE = "m1_emr"
@@ -22,7 +20,7 @@ def bootstrap_store(
         if cs.get_all_patients(conn):
             return {"quarantined": []}
         try:
-            seed_df = pd.read_csv(seed_csv)
+            seed_df = read_patient_csv(seed_csv)
         except FileNotFoundError:
             return {"quarantined": []}
         result = ingest_dataframe(conn, seed_df, quarantine_duplicates=True)

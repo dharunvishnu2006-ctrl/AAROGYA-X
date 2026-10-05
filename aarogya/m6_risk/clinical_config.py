@@ -67,3 +67,21 @@ FASTING_SUGAR_DIABETES = ClinicalThreshold(
         "diagnostic criteria for diabetes mellitus."
     ),
 )
+
+
+@dataclass(frozen=True)
+class PlausibleRange:
+    low: float
+    high: float
+    unit: str
+
+    def contains(self, value: float) -> bool:
+        return self.low <= value <= self.high
+
+
+# Reject values outside measurable range
+AGE_RANGE = PlausibleRange(low=0, high=125, unit="years")
+BMI_RANGE = PlausibleRange(low=10.0, high=90.0, unit="kg/m²")
+BP_SYSTOLIC_RANGE = PlausibleRange(low=50.0, high=300.0, unit="mmHg")
+BP_DIASTOLIC_RANGE = PlausibleRange(low=30.0, high=200.0, unit="mmHg")
+SUGAR_FASTING_RANGE = PlausibleRange(low=30.0, high=700.0, unit="mg/dL")

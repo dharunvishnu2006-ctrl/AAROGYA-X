@@ -3,7 +3,7 @@ import streamlit as st
 
 from aarogya.m1_emr import clinical_store as cs
 from aarogya.m1_emr.bootstrap import bootstrap_store
-from aarogya.m1_emr.ingest import ingest_dataframe
+from aarogya.m1_emr.ingest import ingest_dataframe, read_patient_csv
 from aarogya.m1_emr.models import Patient
 from aarogya.m14_audit.health import health
 from aarogya.m14_audit.logging_setup import (
@@ -14,16 +14,18 @@ from aarogya.m14_audit.logging_setup import (
 from aarogya.m2_his.hospitals import HOSPITAL_NETWORK
 from aarogya.m6_risk.analytics import score_patient_risk
 from aarogya.platform import paths
+from aarogya.platform.timeutil import to_ist_display
 
 DB_PATH = str(paths.DB_PATH)
 SEED_CSV = str(paths.SEED_CSV)
 APP_MODULE = "app"
+LAST_INGEST_KEY = "last_ingest"
 EMR_MODULE = "m1_emr"
 
 st.set_page_config(
     page_title="AAROGYA Clinical Decision Support", layout="wide"
 )
-configure_logging()
+configure_logging(paths.LOG_FILE)
 
 
 @st.cache_resource
@@ -48,8 +50,8 @@ if store_health["status"] != "healthy":
 st.sidebar.success(
     f"Healthy · {store_health['patient_count']} patients in store"
 )
-last_upload = store_health["last_upload_utc"] or "none yet"
-st.sidebar.caption(f"Last upload (UTC): {last_upload}")
+last_upload = to_ist_display(store_health["last_upload_utc"]) or "none yet"
+st.sidebar.caption(f"Last upload (IST): {last_upload}")
 st.sidebar.divider()
 
 conn = cs.get_connection(DB_PATH)
@@ -72,7 +74,7 @@ try:
     )
     if uploaded_file is not None:
         if st.sidebar.button("Run Ingestion"):
-            upload_df = pd.read_csv(uploaded_file)
+            upload_df = read_patient_csv(uploaded_file)
             result = ingest_dataframe(conn, upload_df)
             cs.record_ingest(
                 conn, result.rows_read, result.accepted, result.rejected
@@ -84,18 +86,27 @@ try:
                 accepted=result.accepted,
                 rejected=result.rejected,
             )
-
-            st.sidebar.success(f"Ingested {result.accepted} new patients.")
-            if result.skipped > 0:
-                st.sidebar.info(
-                    f"Skipped {result.skipped} existing patients "
-                    "(duplicate IDs)."
-                )
-            if result.quarantine:
-                st.sidebar.error(
-                    f"Quarantined {len(result.quarantine)} invalid rows."
-                )
+            # Keep result so rerun shows it
+            st.session_state[LAST_INGEST_KEY] = result
             st.rerun()
+
+    last_ingest = st.session_state.get(LAST_INGEST_KEY)
+    if last_ingest is not None:
+        st.sidebar.caption("Last ingestion result")
+        st.sidebar.success(f"Ingested {last_ingest.accepted} new patients.")
+        if last_ingest.skipped > 0:
+            st.sidebar.info(
+                f"Skipped {last_ingest.skipped} existing patients "
+                "(duplicate IDs)."
+            )
+        if last_ingest.quarantine:
+            st.sidebar.error(
+                f"Quarantined {len(last_ingest.quarantine)} invalid rows."
+            )
+            st.sidebar.dataframe(
+                pd.DataFrame(last_ingest.quarantine),
+                hide_index=True,
+            )
 
     st.sidebar.divider()
 
@@ -174,6 +185,15 @@ try:
     df_current = (
         pd.DataFrame(all_records) if all_records else pd.DataFrame()
     )
+    # Show stored UTC times in IST
+    if not df_current.empty:
+        df_current["updated_at"] = df_current["updated_at"].map(
+            to_ist_display
+        )
+    ist_labels = {
+        "updated_at": "updated_at (IST)",
+        "recorded_at": "recorded_at (IST)",
+    }
 
     with tab_dashboard:
         if not df_current.empty:
@@ -204,7 +224,7 @@ try:
                         "city",
                         "updated_at",
                     ]
-                ],
+                ].rename(columns=ist_labels),
                 use_container_width=True,
             )
         else:
@@ -213,7 +233,10 @@ try:
     with tab_directory:
         st.subheader("Patient Clinical Profile Directory")
         if not df_current.empty:
-            st.dataframe(df_current, use_container_width=True)
+            st.dataframe(
+                df_current.rename(columns=ist_labels),
+                use_container_width=True,
+            )
         else:
             st.info("No records to display.")
 
@@ -237,7 +260,8 @@ try:
                         f"**Demographics:** {patient_obj.age} yrs | "
                         f"{patient_obj.gender} | {patient_obj.city}"
                     )
-                    st.write(f"**Last Sync:** {patient_row['updated_at']}")
+                    last_sync = to_ist_display(patient_row["updated_at"])
+                    st.write(f"**Last Sync (IST):** {last_sync}")
                     st.write(
                         "**Calculated BMI Category:** "
                         f"`{patient_obj.get_bmi_category()}`"
@@ -311,8 +335,13 @@ try:
             else cs.get_patient_history(conn, audit_target)
         )
         if audit_records:
+            df_audit = pd.DataFrame(audit_records)
+            df_audit["recorded_at"] = df_audit["recorded_at"].map(
+                to_ist_display
+            )
             st.dataframe(
-                pd.DataFrame(audit_records), use_container_width=True
+                df_audit.rename(columns=ist_labels),
+                use_container_width=True,
             )
         else:
             st.info("No clinical adjustments recorded in audit ledger.")

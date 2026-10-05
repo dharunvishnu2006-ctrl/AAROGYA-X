@@ -20,6 +20,12 @@ version. Current version: v1.1. May use only Python Layer 1 tools
 - Every feature gets pytest tests. Run them and show me the output.
 - Do not commit. Do not edit README.md, docs/build_log.md or docs/specs/.
 
+## Each batch
+- Before planning, explain in 5 plain lines what the batch builds
+  and why the hospital needs it.
+- Ask before installing a package, deleting a file or touching
+  anything outside this folder.
+
 ## Code layout
 - Comments 4-6 words, verb first. Max 76 characters per line, comment included.
 - No inline comment on a def or class line.

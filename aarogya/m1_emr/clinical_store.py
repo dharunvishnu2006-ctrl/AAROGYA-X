@@ -1,8 +1,8 @@
 import sqlite3
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from aarogya.m1_emr.models import Patient
 from aarogya.platform import paths
+from aarogya.platform.timeutil import utc_now_iso
 
 ALLOWED_FIELDS = {
     "age",
@@ -79,7 +79,7 @@ def insert_patient(conn: sqlite3.Connection, patient: Patient) -> None:
             f"{type(patient).__name__}"
         )
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = utc_now_iso()
     with conn:
         conn.execute(
             """
@@ -131,7 +131,7 @@ def correct_patient_vital(
             "for all corrections."
         )
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = utc_now_iso()
 
     with conn:
         cursor = conn.cursor()
@@ -222,7 +222,7 @@ def record_ingest(
     conn: sqlite3.Connection, rows_read: int, accepted: int, rejected: int
 ) -> None:
     """Appends one upload summary row; counts only, no patient data."""
-    now = datetime.now(timezone.utc).isoformat()
+    now = utc_now_iso()
     with conn:
         conn.execute(
             """

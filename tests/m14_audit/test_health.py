@@ -18,7 +18,7 @@ def test_healthy_store(db_file):
 def test_count_is_live(db_file, make_patient):
     assert health(db_file)["patient_count"] == 0
     conn = cs.get_connection(str(db_file))
-    cs.insert_patient(conn, make_patient("P1"))
+    cs.insert_patient(conn, make_patient("P001"))
     conn.close()
     assert health(db_file)["patient_count"] == 1
 

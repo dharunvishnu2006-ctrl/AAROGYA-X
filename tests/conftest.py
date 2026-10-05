@@ -42,7 +42,7 @@ SAMPLE_ROWS = [
 
 @pytest.fixture
 def make_patient():
-    def _make(pid="P1", bmi=24.0, sbp=120.0):
+    def _make(pid="P001", bmi=24.0, sbp=120.0):
         return Patient(pid, "Test", 40, "M", bmi, sbp, 80.0, 90.0, "Delhi")
 
     return _make

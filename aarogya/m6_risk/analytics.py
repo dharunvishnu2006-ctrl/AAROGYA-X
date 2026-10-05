@@ -1,9 +1,7 @@
-from aarogya.m6_risk.clinical_config import (
-    BMI_OBESITY,
-    BP_DIASTOLIC_HIGH,
-    BP_SYSTOLIC_HIGH,
-    FASTING_SUGAR_DIABETES,
-)
+from aarogya.m6_risk.scoring import HasVitals, ThresholdRiskScorer
+
+# Share one stateless scorer instance
+_DEFAULT_SCORER = ThresholdRiskScorer()
 
 
 def calc_avg_bmi(df):
@@ -28,24 +26,6 @@ def calc_std_sugar(df):
     }
 
 
-def score_patient_risk(patient) -> str:
-    risk_score = 0
-
-    if patient.bmi >= BMI_OBESITY.value:
-        risk_score += 1
-
-    if (
-        patient.bp_systolic >= BP_SYSTOLIC_HIGH.value
-        or patient.bp_diastolic >= BP_DIASTOLIC_HIGH.value
-    ):
-        risk_score += 1
-
-    if patient.sugar_fasting >= FASTING_SUGAR_DIABETES.value:
-        risk_score += 1
-
-    if risk_score == 0:
-        return "Low"
-    elif risk_score == 1:
-        return "Medium"
-    else:
-        return "High"
+def score_patient_risk(patient: HasVitals) -> str:
+    """Delegates to the threshold scorer; results unchanged."""
+    return _DEFAULT_SCORER.score(patient)
