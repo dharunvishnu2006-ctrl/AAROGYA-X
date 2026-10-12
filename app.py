@@ -11,7 +11,20 @@ from aarogya.m14_audit.logging_setup import (
     log_error,
     log_event,
 )
+from aarogya.m15_dashboard.charts import (
+    plot_age_distribution,
+    plot_bmi_vs_age,
+    plot_city_patient_count,
+)
 from aarogya.m2_his.hospitals import HOSPITAL_NETWORK
+from aarogya.m6_risk.cohort_stats import (
+    add_age_band,
+    add_risk_level,
+    city_counts,
+    cohort_size,
+    describe_vitals,
+    group_stats,
+)
 from aarogya.m6_risk.analytics import score_patient_risk
 from aarogya.platform import paths
 from aarogya.platform.timeutil import to_ist_display
@@ -21,6 +34,11 @@ SEED_CSV = str(paths.SEED_CSV)
 APP_MODULE = "app"
 LAST_INGEST_KEY = "last_ingest"
 EMR_MODULE = "m1_emr"
+GROUPINGS = {
+    "City": "city",
+    "Age band": "age_band",
+    "Risk level": "risk_level",
+}
 
 st.set_page_config(
     page_title="AAROGYA Clinical Decision Support", layout="wide"
@@ -36,6 +54,18 @@ def bootstrap_database():
     except Exception as err:
         log_error(EMR_MODULE, err)
         raise
+
+
+def flat_columns(table):
+    """Joins grouped column levels for display."""
+    out = table.copy()
+    out.columns = [f"{v} {s}" for v, s in out.columns]
+    return out
+
+
+def show_chart(fig):
+    """Draws a figure on a transparent background."""
+    st.pyplot(fig, transparent=True)
 
 
 init_status = bootstrap_database()
@@ -197,17 +227,40 @@ try:
 
     with tab_dashboard:
         if not df_current.empty:
+            vitals = describe_vitals(df_current)
+            df_cohort = add_age_band(add_risk_level(df_current))
             c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Active Cohort Size", len(df_current))
+            c1.metric("Active Cohort Size", cohort_size(df_current))
             c2.metric(
                 "Mean Systolic BP",
-                f"{df_current['bp_systolic'].mean():.1f} mmHg",
+                f"{vitals.loc['bp_systolic', 'mean']:.1f} mmHg",
             )
             c3.metric(
                 "Mean Fasting Sugar",
-                f"{df_current['sugar_fasting'].mean():.1f} mg/dL",
+                f"{vitals.loc['sugar_fasting', 'mean']:.1f} mg/dL",
             )
-            c4.metric("Mean BMI", f"{df_current['bmi'].mean():.1f}")
+            c4.metric("Mean BMI", f"{vitals.loc['bmi', 'mean']:.1f}")
+
+            st.subheader("Cohort Vitals Summary")
+            st.dataframe(vitals.round(2), use_container_width=True)
+
+            st.subheader("Vitals by Group")
+            group_tabs = st.tabs(list(GROUPINGS))
+            for group_tab, column in zip(group_tabs, GROUPINGS.values()):
+                table = group_stats(df_cohort, column)
+                with group_tab:
+                    st.dataframe(
+                        flat_columns(table).round(2),
+                        use_container_width=True,
+                    )
+
+            st.subheader("Cohort Charts")
+            chart_left, chart_right = st.columns(2)
+            with chart_left:
+                show_chart(plot_age_distribution(df_cohort))
+            with chart_right:
+                show_chart(plot_city_patient_count(df_cohort))
+            show_chart(plot_bmi_vs_age(df_cohort))
 
             st.subheader("Cohort Vitals Overview")
             st.dataframe(
@@ -292,14 +345,7 @@ try:
     with tab_hospitals:
         st.subheader("Regional Hospital Network Occupancy")
         if not df_current.empty:
-            norm_counts = (
-                df_current["city"]
-                .astype(str)
-                .str.strip()
-                .str.lower()
-                .value_counts()
-                .to_dict()
-            )
+            norm_counts = city_counts(df_current).to_dict()
             h_data = []
             for h in HOSPITAL_NETWORK:
                 admissions = norm_counts.get(h.city.strip().lower(), 0)
