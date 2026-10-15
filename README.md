@@ -5,7 +5,7 @@
 [![Pytest](https://img.shields.io/badge/Tests-5%20Passed-green?style=for-the-badge&logo=pytest)
 
 ## 🚀 Live Demo
-👉 [Click Here](https://aarogya-v1-nqmatcmqp2xqc2xbqtuu57.streamlit.app/)
+**[Try it live →](https://aarogya-v1-nqmatcmqp2xqc2xbqtuu57.streamlit.app/)**
 
 ## ✨ Features
 - 📊 BMI, BP, Sugar dashboard
