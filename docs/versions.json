@@ -1,0 +1,28 @@
+{
+  "project": "AAROGYA X",
+  "versions": [
+    {
+      "version": "v1.0",
+      "name": "Sprint",
+      "status": "released",
+      "summary": "Streamlit dashboard: vitals, patient records, risk bands, city occupancy",
+      "tests": 5
+    },
+    {
+      "version": "v1.1",
+      "name": "Completion - the core record",
+      "status": "released",
+      "date": "2026-10-17",
+      "may_use_to_step": 80,
+      "modules": ["M1 EMR", "M2 HIS (begun)", "M6 Risk", "M14 Audit", "M15 Dashboard"],
+      "summary": "SQLite store with append-only corrections, module layout, JSON logs and honest health, identity by patient_id, one statistics module, occupancy from real stays, read-only localhost API",
+      "tests": 280,
+      "built_with": "A1-A3 by hand; Batches 1-4 with Claude Code and Claude"
+    },
+    {
+      "version": "v2",
+      "status": "next",
+      "may_use_to_step": 153
+    }
+  ]
+}
