@@ -25,3 +25,13 @@ At 50 rows the plain loop was about 13x faster: pandas has a fixed
 start-up cost before it does any arithmetic. At 50,000 rows pandas was
 about 26x faster. We keep the vectorised version because a real hospital
 has thousands of patients, not 50.
+
+## Known limits (v1.1)
+
+- No authentication yet - API is localhost only (127.0.0.1).
+  Anyone using this computer can call it; nobody else can reach it.
+  Before a real hospital could use it: login, roles (who may see
+  what), HTTPS, and an audit record of who read which patient.
+- Flask's development server request log is switched off, because it
+  printed patient_ids in request lines. A production server will need
+  request logging that never records ids.

@@ -7,5 +7,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"
 DB_PATH = DATA_DIR / "aarogya.db"
 SEED_CSV = DATA_DIR / "patients_sample.csv"
+HOSPITALS_CSV = DATA_DIR / "hospitals_sample.csv"
+STAYS_CSV = DATA_DIR / "stays_sample.csv"
 LOG_DIR = ROOT / "logs"
 LOG_FILE = LOG_DIR / "aarogya.log"

@@ -16,11 +16,10 @@ from aarogya.m15_dashboard.charts import (
     plot_bmi_vs_age,
     plot_city_patient_count,
 )
-from aarogya.m2_his.hospitals import HOSPITAL_NETWORK
+from aarogya.m2_his.occupancy import hospital_occupancy
 from aarogya.m6_risk.cohort_stats import (
     add_age_band,
     add_risk_level,
-    city_counts,
     cohort_size,
     describe_vitals,
     group_stats,
@@ -31,6 +30,10 @@ from aarogya.platform.timeutil import to_ist_display
 
 DB_PATH = str(paths.DB_PATH)
 SEED_CSV = str(paths.SEED_CSV)
+HOSPITALS_CSV = str(paths.HOSPITALS_CSV)
+STAYS_CSV = str(paths.STAYS_CSV)
+OVER_CAPACITY = "⚠️ Over capacity"
+NO_RATE = "—"
 APP_MODULE = "app"
 LAST_INGEST_KEY = "last_ingest"
 EMR_MODULE = "m1_emr"
@@ -50,7 +53,7 @@ configure_logging(paths.LOG_FILE)
 def bootstrap_database():
     log_event("app_start", APP_MODULE)
     try:
-        return bootstrap_store(DB_PATH, SEED_CSV)
+        return bootstrap_store(DB_PATH, SEED_CSV, HOSPITALS_CSV, STAYS_CSV)
     except Exception as err:
         log_error(EMR_MODULE, err)
         raise
@@ -61,6 +64,11 @@ def flat_columns(table):
     out = table.copy()
     out.columns = [f"{v} {s}" for v, s in out.columns]
     return out
+
+
+def format_pct(pct):
+    """Formats a rate; None (0 beds) shows a dash."""
+    return NO_RATE if pct is None else f"{pct:.1f}%"
 
 
 def show_chart(fig):
@@ -344,30 +352,24 @@ try:
 
     with tab_hospitals:
         st.subheader("Regional Hospital Network Occupancy")
-        if not df_current.empty:
-            norm_counts = city_counts(df_current).to_dict()
-            h_data = []
-            for h in HOSPITAL_NETWORK:
-                admissions = norm_counts.get(h.city.strip().lower(), 0)
-                rate = h.occupancy_rate(admissions)
-                h_data.append(
-                    {
-                        "Hospital ID": h.hospital_id,
-                        "Hospital Name": h.name,
-                        "City": h.city,
-                        "Total Capacity": h.total_beds,
-                        "Active Cohort Admissions": admissions,
-                        "Occupancy Rate (%)": f"{rate:.1f}%",
-                        "Status": (
-                            "⚠️ High Load" if rate >= 80.0 else "Normal"
-                        ),
-                    }
-                )
+        occupancy = hospital_occupancy(conn)
+        if occupancy:
+            h_data = [
+                {
+                    "Hospital ID": h["hospital_id"],
+                    "Hospital Name": h["name"],
+                    "City": h["city"],
+                    "Total Beds": h["total_beds"],
+                    "Open Stays": h["open_stays"],
+                    "Occupancy Rate (%)": format_pct(h["occupancy_pct"]),
+                    "Status": OVER_CAPACITY if h["over_capacity"] else "",
+                }
+                for h in occupancy
+            ]
             st.dataframe(pd.DataFrame(h_data), use_container_width=True)
+            st.caption("Occupancy = open stays ÷ total beds.")
         else:
-            st.info(
-                "No cohort data available to compute hospital occupancies."
-            )
+            st.info("No hospitals in the store yet.")
 
     with tab_audit:
         st.subheader("Immutable Correction History")

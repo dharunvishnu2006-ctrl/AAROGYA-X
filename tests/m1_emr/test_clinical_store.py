@@ -106,3 +106,81 @@ def test_stored_timestamps_are_utc(db, make_patient):
     assert history[0]["recorded_at"].endswith("+00:00")
     cs.record_ingest(db, 1, 1, 0)
     assert cs.get_last_ingest_utc(db).endswith("+00:00")
+
+
+def test_hospitals_and_stays_tables_created(db):
+    cols = {
+        table: [r[1] for r in db.execute(f"PRAGMA table_info({table})")]
+        for table in ("hospitals", "stays")
+    }
+    assert cols["hospitals"] == [
+        "hospital_id",
+        "name",
+        "city",
+        "total_beds",
+    ]
+    assert cols["stays"] == [
+        "stay_id",
+        "patient_id",
+        "hospital_id",
+        "ward",
+        "bed",
+        "admitted_at",
+        "discharged_at",
+    ]
+
+
+def test_stays_schema_has_no_check_or_index(db):
+    # Keep stay rules in stays.py only
+    sql = db.execute(
+        "SELECT sql FROM sqlite_master WHERE name = 'stays'"
+    ).fetchone()[0]
+    assert "CHECK" not in sql.upper()
+    indexes = db.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'index' "
+        "AND tbl_name = 'stays' AND sql IS NOT NULL"
+    ).fetchall()
+    assert indexes == []
+
+
+def test_init_db_upgrades_old_store_keeping_patients(
+    tmp_path, make_patient
+):
+    path = str(tmp_path / "old.db")
+    conn = cs.get_connection(path)
+    cs.init_db(conn)
+    cs.insert_patient(conn, make_patient("P001"))
+    conn.execute("DROP TABLE stays")
+    conn.execute("DROP TABLE hospitals")
+    conn.commit()
+    cs.init_db(conn)
+    assert cs.count_patients(conn) == 1
+    assert conn.execute("SELECT COUNT(*) FROM stays").fetchone()[0] == 0
+    conn.close()
+
+
+def test_stays_foreign_keys_enforced(db, make_patient):
+    cs.insert_patient(db, make_patient("P001"))
+    db.execute("INSERT INTO hospitals VALUES ('H001', 'A', 'Delhi', 5)")
+    insert = (
+        "INSERT INTO stays (patient_id, hospital_id, ward, bed, "
+        "admitted_at) VALUES (?, ?, 'W', 'B', '2026-09-01T00:00:00+00:00')"
+    )
+    with pytest.raises(sqlite3.IntegrityError):
+        db.execute(insert, ("P999", "H001"))
+    with pytest.raises(sqlite3.IntegrityError):
+        db.execute(insert, ("P001", "H999"))
+
+
+def test_readonly_connection_cannot_write_or_create(tmp_path, db_file):
+    conn = cs.get_readonly_connection(str(db_file))
+    try:
+        assert cs.count_patients(conn) == 0
+        with pytest.raises(sqlite3.OperationalError):
+            conn.execute("DELETE FROM patients")
+    finally:
+        conn.close()
+    missing = tmp_path / "missing.db"
+    with pytest.raises(sqlite3.OperationalError):
+        cs.get_readonly_connection(str(missing))
+    assert not missing.exists()

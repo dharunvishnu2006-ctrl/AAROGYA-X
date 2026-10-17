@@ -20,7 +20,15 @@ MAX_BYTES = 1_000_000
 BACKUP_COUNT = 5
 
 EVENTS = frozenset(
-    {"app_start", "seed_loaded", "upload", "correction_saved", "error"}
+    {
+        "app_start",
+        "seed_loaded",
+        "upload",
+        "correction_saved",
+        "error",
+        "hospitals_loaded",
+        "stays_loaded",
+    }
 )
 COUNT_FIELDS = frozenset({"rows_read", "accepted", "rejected"})
 ALLOWED_FIELDS = COUNT_FIELDS | {"error_type"}

@@ -1,4 +1,5 @@
 import sqlite3
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from aarogya.m1_emr.models import Patient
 from aarogya.platform import paths
@@ -25,10 +26,21 @@ def get_connection(db_path: str = str(paths.DB_PATH)) -> sqlite3.Connection:
     return conn
 
 
+def get_readonly_connection(
+    db_path: str = str(paths.DB_PATH),
+) -> sqlite3.Connection:
+    """Opens an existing store read-only; never creates a file."""
+    # Use URI mode=ro for read-only
+    uri = Path(db_path).resolve().as_uri() + "?mode=ro"
+    conn = sqlite3.connect(uri, uri=True)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
 def init_db(conn: sqlite3.Connection) -> None:
     """
     Initializes the schema for active patient records, the immutable
-    audit ledger and the append-only upload log.
+    audit ledger, the append-only upload log, hospitals and stays.
     """
     with conn:
         conn.execute("""
@@ -64,6 +76,28 @@ def init_db(conn: sqlite3.Connection) -> None:
                 rows_read INTEGER NOT NULL,
                 accepted INTEGER NOT NULL,
                 rejected INTEGER NOT NULL
+            );
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS hospitals (
+                hospital_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                city TEXT NOT NULL,
+                total_beds INTEGER NOT NULL
+            );
+        """)
+        # Keep stay rules in m2_his/stays.py
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS stays (
+                stay_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                patient_id TEXT NOT NULL,
+                hospital_id TEXT NOT NULL,
+                ward TEXT NOT NULL,
+                bed TEXT NOT NULL,
+                admitted_at TEXT NOT NULL,
+                discharged_at TEXT,
+                FOREIGN KEY (patient_id) REFERENCES patients (patient_id),
+                FOREIGN KEY (hospital_id) REFERENCES hospitals (hospital_id)
             );
         """)
 

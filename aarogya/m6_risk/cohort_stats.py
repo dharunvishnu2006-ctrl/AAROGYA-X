@@ -57,6 +57,17 @@ def add_age_band(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def age_band_of(age: int) -> str:
+    """Returns one age's band; same cut as add_age_band."""
+    band = pd.cut(
+        [age],
+        bins=AGE_BAND_EDGES,
+        right=False,
+        labels=AGE_BAND_LABELS,
+    )[0]
+    return str(band)
+
+
 def add_risk_level(df: pd.DataFrame) -> pd.DataFrame:
     """Returns a copy with risk_level from the M6 scorer."""
     out = df.copy()
