@@ -6,10 +6,11 @@ No authentication yet, so the server binds 127.0.0.1 only.
 Usage: python -m aarogya.platform.api
 """
 
+import json
 from pathlib import Path
 from typing import Any, Callable, Union
 
-from flask import Flask, jsonify
+from flask import Flask, Response, jsonify
 from werkzeug.exceptions import HTTPException
 from werkzeug.serving import WSGIRequestHandler
 
@@ -24,6 +25,7 @@ PORT = 5000
 API_MODULE = "platform"
 NOT_FOUND_MESSAGE = "Patient not found."
 STORE_ERROR_MESSAGE = "Data store unavailable."
+FHIR_MIMETYPE = "application/fhir+json"
 
 
 class QuietRequestHandler(WSGIRequestHandler):
@@ -75,6 +77,15 @@ def create_app(db_path: Union[str, Path] = paths.DB_PATH) -> Flask:
         if view is None:
             return jsonify(error=NOT_FOUND_MESSAGE), 404
         return jsonify(view)
+
+    @app.get("/patients/<patient_id>/fhir")
+    def get_patient_fhir(patient_id: str) -> Any:
+        if not read_model.is_valid_patient_id(patient_id):
+            return jsonify(error=PATIENT_ID_FORMAT_MESSAGE), 400
+        bundle = read(read_model.patient_fhir, patient_id)
+        if bundle is None:
+            return jsonify(error=NOT_FOUND_MESSAGE), 404
+        return Response(json.dumps(bundle), mimetype=FHIR_MIMETYPE)
 
     @app.get("/hospitals/occupancy")
     def get_occupancy() -> Any:

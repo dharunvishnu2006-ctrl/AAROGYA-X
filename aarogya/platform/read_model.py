@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 
 from aarogya.m1_emr import clinical_store as cs
+from aarogya.m1_emr.fhir_export import patient_bundle
 from aarogya.m1_emr.models import PATIENT_ID_PATTERN, Patient
 from aarogya.m2_his.occupancy import hospital_occupancy
 from aarogya.m6_risk.analytics import score_patient_risk
@@ -63,6 +64,13 @@ def patient_view(
         "vitals": {vital: getattr(patient, vital) for vital in VITALS},
         "risk": score_patient_risk(patient),
     }
+
+
+def patient_fhir(
+    conn: sqlite3.Connection, patient_id: str
+) -> Optional[Dict[str, Any]]:
+    """Returns the patient's FHIR R4B Bundle; None if unknown."""
+    return patient_bundle(conn, patient_id)
 
 
 def occupancy_view(conn: sqlite3.Connection) -> List[Dict[str, Any]]:

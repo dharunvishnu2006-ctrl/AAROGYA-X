@@ -1,8 +1,10 @@
 """Flask test client against a temp store; no network needed."""
 
+import json
 import os
 
 import pytest
+from fhir.resources.R4B.bundle import Bundle
 
 from aarogya.m1_emr import clinical_store as cs
 from aarogya.m1_emr.ingest import ingest_dataframe
@@ -104,8 +106,47 @@ def test_occupancy_per_hospital(client):
     assert rows["H002"]["over_capacity"] is True
 
 
+def test_patient_fhir_bundle(client, sample_df):
+    response = client.get("/patients/P002/fhir")
+    assert response.status_code == 200
+    assert response.mimetype == api.FHIR_MIMETYPE
+    bundle = json.loads(response.get_data(as_text=True))
+    Bundle.model_validate(bundle)
+    kinds = [e["resource"]["resourceType"] for e in bundle["entry"]]
+    assert kinds.count("Patient") == 1
+    assert kinds.count("Observation") == 3
+    assert kinds.count("Encounter") == 1
+    for entry in bundle["entry"]:
+        res = entry["resource"]
+        if res["resourceType"] != "Patient":
+            assert res["subject"] == {"reference": "Patient/P002"}
+    text = response.get_data(as_text=True)
+    assert '"name"' not in text
+    for name in sample_df["name"]:
+        for part in name.split():
+            assert part not in text
+
+
+def test_patient_fhir_bad_id_is_400(client):
+    response = client.get("/patients/PX01/fhir")
+    assert response.status_code == 400
+    assert response.get_json() == {"error": PATIENT_ID_FORMAT_MESSAGE}
+
+
+def test_patient_fhir_unknown_is_404(client):
+    response = client.get("/patients/P999/fhir")
+    assert response.status_code == 404
+    assert response.get_json() == {"error": api.NOT_FOUND_MESSAGE}
+
+
 @pytest.mark.parametrize(
-    "path", ["/cohort/stats", "/patients/P001", "/hospitals/occupancy"]
+    "path",
+    [
+        "/cohort/stats",
+        "/patients/P001",
+        "/patients/P001/fhir",
+        "/hospitals/occupancy",
+    ],
 )
 def test_missing_store_is_503_not_500(store, tmp_path, path):
     client = api.create_app(tmp_path / "nowhere.db").test_client()

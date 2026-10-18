@@ -47,6 +47,16 @@ has thousands of patients, not 50.
   the database could break them; database-level checks are a v2 decision.
 - Age is stored, not date of birth (needs a schema change - v2).
 - No transfers between wards, waiting lists or login (later versions).
+- FHIR export only - no import yet (v2); not tested with any other
+  hospital system; no connection to ABDM.
+- In the FHIR export, an Observation's time is when the patient record
+  last changed (updated_at), not when the vital was measured. A real
+  measurement time needs a schema change (v2).
+- Ward and bed are not in the FHIR export; that would need FHIR
+  Location resources.
+- The FHIR validator (fhir.resources) checks the structure, not the
+  code lists. The LOINC codes are guaranteed by our own tests, checked
+  by hand on loinc.org.
 
 ## Later
 
