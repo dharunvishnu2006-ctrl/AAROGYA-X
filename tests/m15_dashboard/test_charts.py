@@ -93,9 +93,12 @@ def test_chart_is_theme_neutral(seed_df, plot):
 
 
 def test_every_chart_has_a_caller():
-    app_src = (paths.ROOT / "app.py").read_text(encoding="utf-8")
+    # Read app.py and every page
+    files = [paths.ROOT / "app.py", *(paths.ROOT / "ui").glob("*.py")]
+    app_src = "\n".join(f.read_text(encoding="utf-8") for f in files)
     public = [n for n in dir(charts) if n.startswith("plot_")]
-    assert sorted(public) == sorted(f.__name__ for f in CHART_FUNCS)
+    expected = [f.__name__ for f in CHART_FUNCS] + ["plot_occupancy_donut"]
+    assert sorted(public) == sorted(expected)
     for name in public:
         assert re.search(rf"\b{name}\(", app_src), name
 
@@ -108,3 +111,45 @@ def test_chart_avoids_pyplot_state(seed_df, plot):
     before = plt.get_fignums()
     plot(seed_df)
     assert plt.get_fignums() == before
+
+
+@pytest.mark.parametrize(
+    "occupied, available, pct, label",
+    [(2, 3, 40.0, "40.0%"), (2, 0, 200.0, "200.0%"), (0, 0, None, "—")],
+)
+def test_donut_shows_real_rate(occupied, available, pct, label):
+    fig = charts.plot_occupancy_donut(occupied, available, pct)
+    ax = fig.axes[0]
+    assert fig.patch.get_alpha() == 0.0
+    texts = [t.get_text() for t in ax.texts]
+    assert label in texts
+    # Expect two wedges: occupied, available
+    assert len(ax.patches) == 2
+
+
+def test_donut_avoids_pyplot_state():
+    import matplotlib.pyplot as plt
+
+    before = plt.get_fignums()
+    charts.plot_occupancy_donut(1, 1, 50.0)
+    assert plt.get_fignums() == before
+
+
+def test_donut_wedges_match_counts():
+    ax = charts.plot_occupancy_donut(1, 3, 25.0).axes[0]
+    occupied, available = ax.patches
+    assert occupied.theta2 - occupied.theta1 == pytest.approx(90.0)
+    assert available.theta2 - available.theta1 == pytest.approx(270.0)
+    legend = [t.get_text() for t in ax.get_legend().get_texts()]
+    assert legend == ["Occupied (1)", "Available (3)"]
+
+
+def test_donut_is_small_with_body_text():
+    fig = charts.plot_occupancy_donut(120, 380, 24.0)
+    # Guard against a column-filling donut
+    assert fig.get_figheight() <= 1.6
+    assert charts.donut_width_px(fig) <= 400
+    ax = fig.axes[0]
+    sizes = [t.get_fontsize() for t in ax.texts]
+    sizes += [t.get_fontsize() for t in ax.get_legend().get_texts()]
+    assert max(sizes) <= 12

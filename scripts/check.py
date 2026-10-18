@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TOOLS = [
     ("black", ["black", "--check", "--quiet", "."]),
     ("flake8", ["flake8"]),
-    ("mypy", ["mypy", "aarogya", "app.py", "scripts"]),
+    ("mypy", ["mypy", "aarogya", "app.py", "ui", "scripts"]),
     ("bandit", ["bandit", "-r", "aarogya", "-q"]),
     ("pytest", ["pytest", "-q"]),
 ]

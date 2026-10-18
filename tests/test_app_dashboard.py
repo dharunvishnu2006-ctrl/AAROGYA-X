@@ -12,6 +12,8 @@ from aarogya.m6_risk.cohort_stats import cohort_size, describe_vitals
 from aarogya.platform import paths
 
 APP_FILE = paths.ROOT / "app.py"
+STATS_PAGE = "ui/risk_statistics.py"
+BEDS_PAGE = "ui/beds.py"
 
 
 @pytest.fixture
@@ -22,9 +24,17 @@ def app(tmp_path, monkeypatch):
     st.cache_resource.clear()
     at = AppTest.from_file(str(APP_FILE), default_timeout=60)
     at.run()
+    # Open the page holding cohort stats
+    at.switch_page(STATS_PAGE).run()
     yield at
     st.cache_resource.clear()
     shutdown_logging()
+
+
+def app_sources():
+    """Returns app.py plus every page source."""
+    files = [APP_FILE, *(paths.ROOT / "ui").glob("*.py")]
+    return "\n".join(f.read_text(encoding="utf-8") for f in files)
 
 
 def test_dashboard_renders_without_error(app):
@@ -47,11 +57,12 @@ def test_metric_cards_match_cohort_stats(app):
 
 
 def test_app_source_has_no_inline_stats():
-    src = APP_FILE.read_text(encoding="utf-8")
+    src = app_sources()
     assert not re.search(r"\.(mean|median|std)\(", src)
 
 
 def _hospital_table(app):
+    app.switch_page(BEDS_PAGE).run()
     for frame in app.dataframe:
         if "Open Stays" in frame.value.columns:
             return frame.value
@@ -76,7 +87,7 @@ def test_hospital_tab_uses_open_stays(app):
 def test_hospital_status_only_over_capacity(app):
     table = _hospital_table(app)
     assert set(table["Status"]) <= {"", "⚠️ Over capacity"}
-    src = APP_FILE.read_text(encoding="utf-8")
+    src = app_sources()
     assert "High Load" not in src and "80.0" not in src
 
 

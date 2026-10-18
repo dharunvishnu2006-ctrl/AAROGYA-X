@@ -139,6 +139,14 @@ def get_open_stays(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
+def get_all_stays(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
+    """Returns every stay, open or closed, oldest first."""
+    rows = conn.execute(
+        "SELECT * FROM stays ORDER BY stay_id ASC"
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
 def count_open_stays_by_hospital(
     conn: sqlite3.Connection,
 ) -> Dict[str, int]:

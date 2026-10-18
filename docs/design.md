@@ -57,7 +57,9 @@ has thousands of patients, not 50.
 - The FHIR validator (fhir.resources) checks the structure, not the
   code lists. The LOINC codes are guaranteed by our own tests, checked
   by hand on loinc.org.
-
+- The dashboard shows only modules that exist. Laboratory, Pharmacy,
+  Billing and the other later modules are listed under "Coming next"
+  with the version that brings them - no numbers, no pages.
 ## Later
 
 - Quarantine reasons are cut off in the narrow sidebar table
@@ -68,3 +70,10 @@ has thousands of patients, not 50.
   message there too, not only in the sidebar. (Ask Suresh.)
 - "Vitals by Group" table is too wide (16+ columns; sugar cut off).
   Show one vital at a time, or only mean / median / p90. (Ask Suresh.)
+
+  ## Target look
+
+![Target look (AI mockup)](design/target_look.png)
+
+AI-generated mockup of the target look (v6). Not the current app.
+Its numbers, alerts and compliance lines are not real.

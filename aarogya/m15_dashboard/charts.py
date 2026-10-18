@@ -15,6 +15,11 @@ from aarogya.m6_risk.cohort_stats import (
 # Use mid-tone ink for both themes
 INK = "#808080"
 BAR_COLOR = "#2a78d6"
+# Use mid-tone grey for free beds
+FREE_COLOR = "#b0b0b0"
+# Size donut small; body-size text
+DONUT_SIZE = (3.6, 1.5)
+DONUT_FONT = 11
 # Use CVD-safe slots, validated all-pairs
 RISK_STYLE = {
     "Low": {"color": "#2a78d6", "marker": "o"},
@@ -83,6 +88,59 @@ def plot_bmi_vs_age(df):
     )
     _apply_theme(fig, ax)
     return fig
+
+
+def format_occupancy(pct):
+    """Formats a rate for display; None (0 beds) shows a dash."""
+    return "—" if pct is None else f"{pct:.1f}%"
+
+
+def plot_occupancy_donut(occupied, available, pct):
+    """Draws occupied vs available beds; real % in the centre.
+
+    Small and wide: ring on the left, legend on the right. Show it
+    with width=donut_width_px(fig) so it is never stretched.
+    """
+    # Avoid pyplot; GUI backends deadlock threads
+    fig = Figure(figsize=DONUT_SIZE)
+    # Keep ring in left 40%
+    ax = fig.add_axes((0.0, 0.0, 0.4, 1.0))
+    sizes = [occupied, available]
+    # Draw empty ring for zero beds
+    if sum(sizes) == 0:
+        sizes = [0, 1]
+    ax.pie(
+        sizes,
+        colors=[BAR_COLOR, FREE_COLOR],
+        startangle=90,
+        counterclock=False,
+        wedgeprops={"width": 0.32, "edgecolor": "none"},
+    )
+    ax.text(
+        0,
+        0,
+        format_occupancy(pct),
+        ha="center",
+        va="center",
+        fontsize=DONUT_FONT,
+        fontweight="bold",
+        color=INK,
+    )
+    ax.legend(
+        [f"Occupied ({occupied})", f"Available ({available})"],
+        loc="center left",
+        bbox_to_anchor=(1.1, 0.5),
+        fontsize=DONUT_FONT,
+        frameon=False,
+    )
+    ax.set_aspect("equal")
+    _apply_theme(fig, ax)
+    return fig
+
+
+def donut_width_px(fig):
+    """Returns the figure's natural width in pixels."""
+    return int(fig.get_figwidth() * fig.dpi)
 
 
 def plot_city_patient_count(df):

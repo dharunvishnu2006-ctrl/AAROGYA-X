@@ -26,6 +26,8 @@ def app(tmp_path, sample_csv, monkeypatch):
     st.cache_resource.clear()
     at = AppTest.from_file(APP_FILE, default_timeout=60)
     at.run()
+    # Open the page holding upload
+    at.switch_page("ui/records.py").run()
     assert not at.exception
     yield at
     st.cache_resource.clear()
@@ -58,13 +60,13 @@ def upload_bad_id(at):
 
 
 def quarantine_table(at):
-    tables = [d.value for d in at.sidebar.dataframe]
+    tables = [d.value for d in at.dataframe]
     return next(t for t in tables if "reason" in t.columns)
 
 
 def test_bad_id_upload_shows_format_message(app):
     upload_bad_id(app)
-    errors = [e.value for e in app.sidebar.error]
+    errors = [e.value for e in app.error]
     assert "Quarantined 1 invalid rows." in errors
     table = quarantine_table(app)
     assert list(table["id"]) == ["PX01"]
@@ -80,19 +82,15 @@ def test_message_survives_next_rerun(app):
     upload_bad_id(app)
     app.run()
     assert not app.exception
-    assert "Quarantined 1 invalid rows." in [
-        e.value for e in app.sidebar.error
-    ]
+    assert "Quarantined 1 invalid rows." in [e.value for e in app.error]
     table = quarantine_table(app)
     assert list(table["reason"]) == [PATIENT_ID_FORMAT_MESSAGE]
 
 
 def test_spaced_bom_header_upload_accepted(app):
     upload(app, SPACED_BOM_CSV)
-    assert "Ingested 1 new patients." in [
-        m.value for m in app.sidebar.success
-    ]
-    assert not [e.value for e in app.sidebar.error]
+    assert "Ingested 1 new patients." in [m.value for m in app.success]
+    assert not [e.value for e in app.error]
 
 
 def test_missing_column_upload_shows_reason(app):
