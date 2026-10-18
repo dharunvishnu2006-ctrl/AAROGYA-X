@@ -10,6 +10,11 @@ from aarogya.m15_dashboard.charts import (
     donut_width_px,
     plot_occupancy_donut,
 )
+from aarogya.m15_dashboard.brand import (
+    BRAND,
+    current_version,
+    today_line,
+)
 from aarogya.m2_his.hospitals import get_hospitals
 from aarogya.platform import paths
 
@@ -60,9 +65,11 @@ conn = cs.get_connection(str(paths.DB_PATH))
 try:
     hospitals = {h.hospital_id: h.name for h in get_hospitals(conn)}
 
-    # Show header, filters and cards
-    head, pick, find = st.columns([2, 1, 1], vertical_alignment="bottom")
-    head.header("AAROGYA X - Hospital platform")
+    # Show name, Vision, Today lines
+    st.title(BRAND.name)
+    st.caption(f"Vision: {BRAND.vision}")
+    st.caption(today_line(current_version()))
+    pick, find = st.columns(2, vertical_alignment="bottom")
     hospital_id = pick.selectbox(
         "Hospital",
         options=[None, *hospitals],

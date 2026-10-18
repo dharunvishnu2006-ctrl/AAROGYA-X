@@ -12,6 +12,11 @@ from aarogya.m1_emr.models import PATIENT_ID_FORMAT_MESSAGE
 from aarogya.m14_audit import health as health_module
 from aarogya.m14_audit.logging_setup import shutdown_logging
 from aarogya.m15_dashboard import kpis
+from aarogya.m15_dashboard.brand import (
+    BRAND,
+    current_version,
+    today_line,
+)
 from aarogya.platform import paths
 
 APP_FILE = str(paths.ROOT / "app.py")
@@ -73,6 +78,39 @@ def test_every_page_runs(app, page):
 
 def test_overview_is_default_page(app):
     assert set(CARDS) <= set(cards(app))
+
+
+def test_overview_header_is_plain_text(app):
+    assert [t.value for t in app.title] == [BRAND.name]
+    captions = [c.value for c in app.caption]
+    # Expect order: Vision, Today, Synthetic
+    assert captions[:3] == [
+        f"Vision: {BRAND.vision}",
+        today_line(current_version()),
+        "Synthetic data - not for clinical use",
+    ]
+    assert "AAROGYA X - Hospital platform" not in [
+        h.value for h in app.header
+    ]
+    assert not [m for m in app.markdown if m.proto.allow_html]
+
+
+def code_files():
+    """Returns every app, page, package and script file."""
+    roots = [paths.ROOT / d for d in ("aarogya", "ui", "scripts")]
+    files = [paths.ROOT / "app.py"]
+    for root in roots:
+        files += sorted(root.rglob("*.py"))
+    return files
+
+
+def test_no_html_anywhere_in_codebase():
+    tags = re.compile(r"<(div|img|span|style|script)\b", re.I)
+    for path in code_files():
+        src = path.read_text(encoding="utf-8")
+        assert "unsafe_allow_html" not in src, path.name
+        assert "st.html" not in src, path.name
+        assert not tags.search(src), path.name
 
 
 def test_overview_cards_equal_kpis(app):

@@ -19,6 +19,8 @@ version. Current version: v1.1. May use only Python Layer 1 tools
 - Never write a patient name, patient_id or vital value into a log line.
 - Every feature gets pytest tests. Run them and show me the output.
 - Do not commit. Do not edit README.md, docs/build_log.md or docs/specs/.
+- Every number on a page comes from a function, a file or the database.
+- No HTML in the app: no unsafe_allow_html, no st.html.
 
 ## Each batch
 - Before planning, explain in 5 plain lines what the batch builds

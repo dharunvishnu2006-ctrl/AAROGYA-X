@@ -12,14 +12,14 @@ from aarogya.m14_audit.logging_setup import (
     log_error,
     log_event,
 )
+from aarogya.m15_dashboard.brand import BRAND, current_version
 from aarogya.platform import paths
 
 APP_MODULE = "app"
 EMR_MODULE = "m1_emr"
 INIT_STATUS_KEY = "init_status"
-VERSION_LABEL = "AAROGYA X v1.1"
 
-st.set_page_config(page_title="AAROGYA X", layout="wide")
+st.set_page_config(page_title=BRAND.name, layout="wide")
 configure_logging(paths.LOG_FILE)
 
 
@@ -78,4 +78,4 @@ else:
 
 st.navigation(pages).run()
 status = "System healthy" if healthy else "System unhealthy"
-st.sidebar.caption(f"{VERSION_LABEL} · {status}")
+st.sidebar.caption(f"{BRAND.name} {current_version()} · {status}")
