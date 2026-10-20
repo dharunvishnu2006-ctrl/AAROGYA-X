@@ -1,5 +1,9 @@
+from aarogya.m1_emr import clinical_store as cs
 from aarogya.m1_emr import models
+from aarogya.m1_emr.bootstrap import bootstrap_store
 from aarogya.m2_his.hospitals import HOSPITAL_NETWORK, Hospital
+from aarogya.m2_his.occupancy import hospital_occupancy
+from aarogya.platform import paths
 
 
 def test_occupancy_rate():
@@ -19,6 +23,24 @@ def test_network_uses_single_class():
         "H002",
         "H003",
     ]
+
+
+def test_network_names_are_synthetic():
+    assert all(h.name.startswith("AAROGYA ") for h in HOSPITAL_NETWORK)
+
+
+def test_seed_never_over_capacity(tmp_path):
+    db_path = tmp_path / "aarogya.db"
+    bootstrap_store(
+        db_path, paths.SEED_CSV, paths.HOSPITALS_CSV, paths.STAYS_CSV
+    )
+    conn = cs.get_connection(str(db_path))
+    try:
+        rows = hospital_occupancy(conn)
+    finally:
+        conn.close()
+    assert len(rows) == len(HOSPITAL_NETWORK)
+    assert not [r["hospital_id"] for r in rows if r["over_capacity"]]
 
 
 def test_models_has_no_hospital_copy():

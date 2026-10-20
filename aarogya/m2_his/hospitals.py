@@ -26,9 +26,9 @@ class Hospital:
 
 
 HOSPITAL_NETWORK = [
-    Hospital("H001", "Apollo Hospital", "Chennai", 500),
-    Hospital("H002", "Fortis Hospital", "Bangalore", 400),
-    Hospital("H003", "Manipal Hospital", "Delhi", 450),
+    Hospital("H001", "AAROGYA Chennai", "Chennai", 12),
+    Hospital("H002", "AAROGYA Bangalore", "Bangalore", 12),
+    Hospital("H003", "AAROGYA Delhi", "Delhi", 8),
 ]
 
 
