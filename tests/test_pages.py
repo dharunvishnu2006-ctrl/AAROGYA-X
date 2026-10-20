@@ -82,15 +82,14 @@ def test_overview_is_default_page(app):
 
 def test_overview_header_is_plain_text(app):
     assert [t.value for t in app.title] == [BRAND.name]
-    captions = [c.value for c in app.caption]
-    # Expect Vision then Synthetic captions
-    assert captions[:2] == [
-        f"Vision: {BRAND.vision}",
-        "Synthetic data - not for clinical use",
+    captions = [c.value for c in app.main.caption]
+    assert captions[0] == "Synthetic data - not for clinical use"
+    # Expect Vision heading, then green Today
+    markdowns = [m.value for m in app.main.markdown]
+    assert markdowns[:2] == [
+        f"#### Vision: {BRAND.vision}",
+        f":green[**{today_line(current_version())}**]",
     ]
-    # Show Today line green, bold
-    markdowns = [m.value for m in app.markdown]
-    assert f":green[**{today_line(current_version())}**]" in markdowns
     assert "AAROGYA X - Hospital platform" not in [
         h.value for h in app.header
     ]
@@ -134,10 +133,13 @@ def test_overview_cards_follow_hospital(app):
     assert shown["Patients"] == str(store_kpis()["patients"])
 
 
-def test_coming_next_is_closed_list(app):
-    (expander,) = [
-        e for e in app.expander if e.label.startswith("Coming next")
-    ]
+def coming_next(block):
+    return [e for e in block.expander if e.label.startswith("Coming next")]
+
+
+def test_coming_next_is_closed_sidebar_list(app):
+    (expander,) = coming_next(app.sidebar)
+    assert not coming_next(app.main)
     assert expander.proto.expanded is False
     assert len(expander.metric) == 0
     assert len(expander.button) == 0
@@ -145,6 +147,17 @@ def test_coming_next_is_closed_list(app):
     lines = [ln for ln in text.splitlines() if "arrives in" in ln]
     assert len(lines) == COMING_NEXT_COUNT
     assert not re.search(r"\d+\s*%|₹|\$", text)
+
+
+@pytest.mark.parametrize("page", PAGES)
+def test_coming_next_sits_above_foot(app, page):
+    app.switch_page(page).run()
+    kids = list(app.sidebar.children.values())
+    (expander,) = coming_next(app.sidebar)
+    foot = next(
+        k for k in kids if getattr(k, "value", "").startswith(BRAND.name)
+    )
+    assert kids.index(expander) < kids.index(foot)
 
 
 @pytest.mark.parametrize(

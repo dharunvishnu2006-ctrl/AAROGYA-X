@@ -23,19 +23,6 @@ ALL_HOSPITALS = "All hospitals"
 NOT_FOUND = "Patient not found."
 NETWORK_WIDE = "Network-wide"
 FLOW_HEIGHT_PX = 220
-# List unbuilt modules without numbers
-COMING_NEXT = (
-    ("Laboratory", "v2"),
-    ("Pharmacy", "v2"),
-    ("Emergency triage", "v2"),
-    ("Medical imaging", "v3-v4"),
-    ("Risk prediction model", "v3-v4"),
-    ("AI clinical assistant", "v5"),
-    ("OPD and appointments", "v5"),
-    ("Login and roles", "v5"),
-    ("Billing", "v6"),
-    ("Command centre", "v6"),
-)
 RECENT_TABS = {
     "All": "all",
     "Inpatients": "open",
@@ -67,7 +54,7 @@ try:
 
     # Show name, Vision, Today lines
     st.title(BRAND.name)
-    st.caption(f"Vision: {BRAND.vision}")
+    st.markdown(f"#### Vision: {BRAND.vision}")
     st.markdown(f":green[**{today_line(current_version())}**]")
     pick, find = st.columns(2, vertical_alignment="bottom")
     hospital_id = pick.selectbox(
@@ -165,12 +152,6 @@ try:
         for name in attention["over_capacity"]:
             st.warning(f"{name} is over 100% of beds.")
 
-    with st.expander("Coming next - 10 modules", expanded=False):
-        st.markdown(
-            "\n".join(
-                f"- {name} - arrives in {v}" for name, v in COMING_NEXT
-            )
-        )
     st.caption("Decision support only - the clinician decides.")
 
 except Exception as err:
