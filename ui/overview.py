@@ -68,7 +68,7 @@ try:
     # Show name, Vision, Today lines
     st.title(BRAND.name)
     st.caption(f"Vision: {BRAND.vision}")
-    st.caption(today_line(current_version()))
+    st.markdown(f":green[**{today_line(current_version())}**]")
     pick, find = st.columns(2, vertical_alignment="bottom")
     hospital_id = pick.selectbox(
         "Hospital",

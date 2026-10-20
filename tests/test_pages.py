@@ -83,12 +83,14 @@ def test_overview_is_default_page(app):
 def test_overview_header_is_plain_text(app):
     assert [t.value for t in app.title] == [BRAND.name]
     captions = [c.value for c in app.caption]
-    # Expect order: Vision, Today, Synthetic
-    assert captions[:3] == [
+    # Expect Vision then Synthetic captions
+    assert captions[:2] == [
         f"Vision: {BRAND.vision}",
-        today_line(current_version()),
         "Synthetic data - not for clinical use",
     ]
+    # Show Today line green, bold
+    markdowns = [m.value for m in app.markdown]
+    assert f":green[**{today_line(current_version())}**]" in markdowns
     assert "AAROGYA X - Hospital platform" not in [
         h.value for h in app.header
     ]
