@@ -12,12 +12,13 @@
       "version": "v1.1",
       "name": "Completion - the core record",
       "status": "released",
-      "date": "2026-10-17",
+      "date": "2026-10-20",
       "may_use_to_step": 80,
       "modules": ["M1 EMR", "M2 HIS (begun)", "M6 Risk", "M14 Audit", "M15 Dashboard"],
-      "summary": "SQLite store with append-only corrections, module layout, JSON logs and honest health, identity by patient_id, one statistics module, occupancy from real stays, read-only localhost API",
-      "tests": 280,
-      "built_with": "A1-A3 by hand; Batches 1-4 with Claude Code and Claude",
+      "summary": "SQLite store with append-only corrections, module layout, JSON logs and honest health, identity by patient_id, one statistics module, occupancy from real stays, read-only localhost API, FHIR export (Patient, Observations, Encounters), one patient-journey test, a six-page hospital look with an Overview from the store",
+      "tests": 362,
+      "live_demo": "https://aarogya-x.streamlit.app",
+      "built_with": "A1-A3 by hand; Batches 1-5 with Claude Code and Claude",
       "updates": ["Home page polish"]
     },
     {
